@@ -25,10 +25,10 @@ int main(void)
 
     SerialDescription connection_descr;
     connection_descr.portName = "/dev/ttyS0";
-    connection_descr.baudrate  = 9600;
-    connection_descr.data_bits = DataBits::DB_EIGHT;
-    connection_descr.parity    = Parity::P_NONE;
-    connection_descr.stop_bits = StopBits::SB_ONE;
+    connection_descr.baudrate = 9600;
+    connection_descr.dataBits = DataBits::DB_EIGHT;
+    connection_descr.parity   = Parity::P_NONE;
+    connection_descr.stopBits = StopBits::SB_ONE;
 
     bool isOpen = connection.Open(connection_descr);
 

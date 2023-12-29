@@ -151,7 +151,7 @@ bool SerialConnection::ConfigureTermios(struct termios &tty, const SerialDescrip
     tty.c_cflag &= !CSIZE;
 
     // Set Data bits
-    switch (d.data_bits)
+    switch (d.dataBits)
     {
     case DataBits::DB_FIVE:
         tty.c_cflag |=  CS5;
@@ -190,7 +190,7 @@ bool SerialConnection::ConfigureTermios(struct termios &tty, const SerialDescrip
     }
 
     // Set Stop Bits
-    switch (d.stop_bits)
+    switch (d.stopBits)
     {
     case StopBits::SB_ONE:
         tty.c_cflag &= ~CSTOPB;

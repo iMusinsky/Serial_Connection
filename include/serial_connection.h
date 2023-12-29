@@ -54,9 +54,9 @@ struct SerialDescription
 {
     std::string   portName;
     unsigned long baudrate;
-    DataBits      data_bits;
+    DataBits      dataBits;
     Parity        parity;
-    StopBits      stop_bits;
+    StopBits      stopBits;
 };
 
 class SerialConnection
