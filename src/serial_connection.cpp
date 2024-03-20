@@ -31,11 +31,11 @@
 const unsigned int MAX_READ_BUFFER = 1000UL;
 
 SerialConnection::SerialConnection()
-    : portName()
-    , isOpen(false)
-    , fd(-1)
-    , readBuffer()
-    , ReadBufferSize(MAX_READ_BUFFER)
+    : portName   {""}
+    , isOpen     {false}
+    , fd         {-1}
+    , readBuffer {}
+    , ReadBufferSize {MAX_READ_BUFFER}
 {
     this->readBuffer.reserve(ReadBufferSize);
 }
@@ -47,7 +47,7 @@ SerialConnection::~SerialConnection()
     }
 }
 
-bool SerialConnection::Open(const SerialDescription &descr) noexcept
+bool SerialConnection::Open(const SerialDescription& descr) noexcept
 {
     if (this->isOpen) {
         fprintf(stderr, "Connection already open\n");
@@ -84,7 +84,7 @@ void SerialConnection::Close() noexcept
     this->isOpen = false;
 }
 
-int SerialConnection::Read(std::string &data, int timeout) noexcept
+int SerialConnection::Read(std::string& data, int timeout) noexcept
 {
     if (!this->isOpen) {
         fprintf(stderr, "Connection was not open\n");
@@ -115,7 +115,7 @@ int SerialConnection::Read(std::string &data, int timeout) noexcept
     return readBytes;
 }
 
-int SerialConnection::Write(const std::string &data, int timeout) const noexcept
+int SerialConnection::Write(const std::string& data, int timeout) const noexcept
 {
     if (!isOpen) {
         fprintf(stderr, "Connection was not open\n");
@@ -143,9 +143,9 @@ int SerialConnection::Write(const std::string &data, int timeout) const noexcept
     return writeBytes;
 }
 
-bool SerialConnection::ConfigureTermios(struct termios &tty, const SerialDescription &d) noexcept
+bool SerialConnection::ConfigureTermios(struct termios& tty, const SerialDescription& d) const noexcept
 {
-    memset(&tty, 0, sizeof tty);
+    memset(&tty, 0, sizeof (tty));
 
 //>> Setting (c_flags)
     tty.c_cflag &= !CSIZE;

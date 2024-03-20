@@ -17,33 +17,33 @@
 #ifndef __SERIAL_CONNECTION_H__
 #define __SERIAL_CONNECTION_H__
 
-#include <iostream>
+#include <string>
 #include <vector>
 
-enum BaudRate
+enum BaudRate : unsigned
 {
-    B_2400   = 2400LU  ,
-    B_4800   = 4800LU  ,
-    B_9600   = 9600LU  ,
-    B_19200  = 19200LU ,
-    B_38400  = 38400LU ,
-    B_57600  = 57600LU ,
-    B_115200 = 115200LU,
+    B_2400   = 2400U  ,
+    B_4800   = 4800U  ,
+    B_9600   = 9600U  ,
+    B_19200  = 19200U ,
+    B_38400  = 38400U ,
+    B_57600  = 57600U ,
+    B_115200 = 115200U,
 };
-enum DataBits
+enum DataBits : unsigned
 {
     DB_FIVE ,
     DB_SIX  ,
     DB_SEVEN,
     DB_EIGHT,
 };
-enum Parity
+enum Parity : unsigned
 {
     P_NONE,
     P_EVEN,
     P_ODD ,
 };
-enum StopBits
+enum StopBits : unsigned
 {
     SB_ONE         ,
     SB_ONE_AND_HALF,
@@ -52,15 +52,29 @@ enum StopBits
 
 struct SerialDescription
 {
-    std::string   portName;
-    unsigned long baudrate;
-    DataBits      dataBits;
-    Parity        parity;
-    StopBits      stopBits;
+    std::string portName;
+    BaudRate    baudrate;
+    DataBits    dataBits;
+    Parity      parity;
+    StopBits    stopBits;
 };
 
 class SerialConnection
 {
+public:
+    SerialConnection();
+    ~SerialConnection();
+
+    bool Open(const SerialDescription& descr) noexcept;
+    void Close() noexcept;
+
+    int Read(std::string& data, int timeout) noexcept;
+
+    int Write(const std::string& data, int timeout) const noexcept;
+
+private:
+    bool ConfigureTermios(struct termios& tty, const SerialDescription& d) const noexcept;
+
 private:
     std::string portName;
     bool        isOpen;
@@ -68,24 +82,10 @@ private:
 
     std::vector<char> readBuffer;
     unsigned long     ReadBufferSize;
-
-public:
-    SerialConnection();
-    ~SerialConnection();
-
-    bool Open(const SerialDescription &descr) noexcept;
-    void Close() noexcept;
-
-    int Read(std::string &data, int timeout) noexcept;
-
-    int Write(const std::string &data, int timeout) const noexcept;
-
-private:
-    bool ConfigureTermios(struct termios &tty, const SerialDescription &d) noexcept;
 };
 
 
-inline DataBits intToDataBits(int bits)
+inline DataBits intToDataBits(unsigned bits)
 {
     switch (bits)
     {
