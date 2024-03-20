@@ -9,19 +9,19 @@ The `SerialConnection` class must be initialized using the `SerialDescription` s
 ```c++
 struct SerialDescription
 {
-    std::string   portName;
-    unsigned long baudrate;
-    DataBits      dataBits;
-    Parity        parity;
-    StopBits      stopBits;
+    std::string portName;
+    BaudRate    baudrate;
+    DataBits    dataBits;
+    Parity      parity;
+    StopBits    stopBits;
 };
 ```
 
 Then it will be possible to write and read data.
 
 ```c++
-int Read(std::string &data, int timeout) noexcept;
-int Write(const std::string &data, int timeout) const noexcept;
+long Read(std::string& data, int timeout) noexcept;
+long Write(const std::string& data, int timeout) const noexcept;
 ```
 
 ## How to build
