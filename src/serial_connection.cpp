@@ -28,28 +28,52 @@
 
 #include <termios.h> /* POSIX Terminal Control Definitions */
 
-const unsigned int MAX_READ_BUFFER = 1000UL;
-
-SerialConnection::SerialConnection()
-    : portName   {""}
-    , isOpen     {false}
-    , fd         {-1}
-    , readBuffer {}
-    , ReadBufferSize {MAX_READ_BUFFER}
+constexpr auto getMaxLengthBuffer()
 {
-    this->readBuffer.reserve(ReadBufferSize);
+    return 1000UL;
+}
+
+SerialConnection::SerialConnection() noexcept
+    : isOpened   {false}
+    , fd         {-1}
+    , current    {}
+    , readBuffer {}
+{
+    this->readBuffer.reserve(getMaxLengthBuffer());
+}
+
+SerialConnection::SerialConnection(SerialConnection& other) noexcept
+    : SerialConnection(std::move(other))
+{}
+
+SerialConnection::SerialConnection(SerialConnection&& other) noexcept
+    : isOpened   {other.isOpened}
+    , fd         {other.fd}
+    , current    {other.current}
+    , readBuffer {}
+{
+    other.isOpened = false;
+    other.fd       = -1;
+    other.current  = {};
+
+    this->readBuffer.reserve(getMaxLengthBuffer());
 }
 
 SerialConnection::~SerialConnection()
 {
-    if (this->fd) {
+    if (this->fd >= 0) {
         close(this->fd);
     }
 }
 
+bool SerialConnection::isOpen() const noexcept
+{
+    return this->isOpened;
+}
+
 bool SerialConnection::Open(const SerialDescription& descr) noexcept
 {
-    if (this->isOpen) {
+    if (this->isOpened) {
         fprintf(stderr, "Connection already open\n");
         return false;
     }
@@ -71,75 +95,111 @@ bool SerialConnection::Open(const SerialDescription& descr) noexcept
         fprintf(stderr,"error(%s) from tcsetattr\n", strerror(errno));
         return false;
     }
-    this->isOpen = true;
+    this->current   = descr;
+    this->isOpened  = true;
 
     return true;
 }
 
 void SerialConnection::Close() noexcept
 {
-    if (this->fd) {
+    if (this->fd >= 0) {
         close(fd);
     }
-    this->isOpen = false;
+    this->current  = {};
+    this->isOpened = false;
 }
 
-int SerialConnection::Read(std::string& data, int timeout) noexcept
+long SerialConnection::Read(std::string& data, int timeout) noexcept
 {
-    if (!this->isOpen) {
+    if (!this->isOpened) {
         fprintf(stderr, "Connection was not open\n");
         return -1;
     }
     data.clear();
 
-    int readBytes = -1;
-
-    constexpr unsigned long connectionCount = 1;
     struct pollfd fds;
 
     fds.fd     = this->fd;
     fds.events = POLLIN;
 
-    poll(&fds, connectionCount, timeout);
-    if (fds.revents & POLLIN) {
-       readBytes = read(this->fd, &this->readBuffer[0], this->ReadBufferSize);
+    const auto rt = poll(&fds, 1, timeout);
+    if (rt == -1) {
+        fprintf(stderr, "Read. Bad in poll. %s\n", strerror(errno));
+        return -1;
+    } else if (rt == 0 || !(fds.revents & POLLIN)) {
+        fprintf(stderr, "Read. Poll timeout.\n");
+        return 0;
     }
 
+    const auto readBytes = read(this->fd, this->readBuffer.data(), getMaxLengthBuffer());
     if (readBytes < 0) {
-        fprintf(stderr,"read %s\n", strerror(errno));
+        fprintf(stderr, "Read. Error: %s\n", strerror(errno));
         return -1;
-    } else if (readBytes > 0) {
-        data = std::string(&readBuffer[0], readBytes);
     }
+    data = std::string(this->readBuffer.data(), static_cast<std::size_t>(readBytes));
 
     return readBytes;
 }
 
-int SerialConnection::Write(const std::string& data, int timeout) const noexcept
+long SerialConnection::Read(std::string& data, std::size_t bytes, int timeout) noexcept
 {
-    if (!isOpen) {
+    if (!this->isOpened) {
+        fprintf(stderr, "Connection was not open\n");
+        return -1;
+    }
+    data.clear();
+
+    struct pollfd fds;
+
+    fds.fd     = this->fd;
+    fds.events = POLLIN;
+
+    const auto rt = poll(&fds, 1, timeout);
+    if (rt == -1) {
+        fprintf(stderr, "Read. Bad in poll. %s\n", strerror(errno));
+        return -1;
+    } else if (rt == 0 || !(fds.revents & POLLIN)) {
+        fprintf(stderr, "Read. Poll timeout.\n");
+        return 0;
+    }
+
+    const auto readBytes = read(this->fd, this->readBuffer.data(), bytes);
+    if (readBytes < 0) {
+        fprintf(stderr, "Read. Error: %s\n", strerror(errno));
+        return -1;
+    }
+    data = std::string(this->readBuffer.data(), static_cast<std::size_t>(readBytes));
+
+    return readBytes;
+}
+
+long SerialConnection::Write(const std::string& data, int timeout) const noexcept
+{
+    if (!this->isOpened) {
         fprintf(stderr, "Connection was not open\n");
         return -1;
     }
 
-    int writeBytes = -1;
-
-    constexpr unsigned long connectionCount = 1;
     struct pollfd fds;
 
     fds.fd     = this->fd;
     fds.events = POLLOUT;
-    
-    poll(&fds, connectionCount, timeout);
-    if(fds.revents & POLLOUT) {
-        writeBytes = write(this->fd, data.c_str(), data.size());
+        
+    const auto rt = poll(&fds, 1, timeout);
+    if (rt == -1) {
+        fprintf(stderr, "Send. Bad in poll. %s\n", strerror(errno));
+        return -1;
+    } else if (rt == 0 || !(fds.revents & POLLOUT)) {
+        fprintf(stderr, "Send. Poll timeout.\n");
+        return 0;
     }
 
+    const auto writeBytes = write(this->fd, data.data(), data.size());
     if (writeBytes == -1) {
-        fprintf(stderr, "Can not send data\n");
-        return writeBytes;
+        fprintf(stderr, "Send. Error: %s\n", strerror(errno));
+        return -1;
     }
-
     return writeBytes;
 }
 

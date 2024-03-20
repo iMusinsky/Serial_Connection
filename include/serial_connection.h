@@ -32,10 +32,10 @@ enum BaudRate : unsigned
 };
 enum DataBits : unsigned
 {
-    DB_FIVE ,
-    DB_SIX  ,
-    DB_SEVEN,
-    DB_EIGHT,
+    DB_FIVE  = 5,
+    DB_SIX   = 6,
+    DB_SEVEN = 7,
+    DB_EIGHT = 8,
 };
 enum Parity : unsigned
 {
@@ -62,26 +62,31 @@ struct SerialDescription
 class SerialConnection
 {
 public:
-    SerialConnection();
+    SerialConnection() noexcept;
+    SerialConnection(SerialConnection& other) noexcept;
+    SerialConnection(SerialConnection&& other) noexcept;
     ~SerialConnection();
+
+    bool isOpen() const noexcept;
 
     bool Open(const SerialDescription& descr) noexcept;
     void Close() noexcept;
 
-    int Read(std::string& data, int timeout) noexcept;
+    long Read(std::string& data, int timeout) noexcept;
+    long Read(std::string& data, std::size_t bytes, int timeout) noexcept;
 
-    int Write(const std::string& data, int timeout) const noexcept;
+    long Write(const std::string& data, int timeout) const noexcept;
 
 private:
     bool ConfigureTermios(struct termios& tty, const SerialDescription& d) const noexcept;
 
 private:
-    std::string portName;
-    bool        isOpen;
-    int         fd;
+    bool isOpened;
+    int  fd;
+
+    SerialDescription current;
 
     std::vector<char> readBuffer;
-    unsigned long     ReadBufferSize;
 };
 
 
